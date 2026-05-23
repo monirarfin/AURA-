@@ -1,0 +1,6 @@
+{
+  "name": "AURA Dating App",
+  "description": "Multi-tier matchmaking, personality-driven MBTI matching, secure anonymous Blind Room-Dates, and an interactive Host Hub.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
