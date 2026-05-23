@@ -397,6 +397,7 @@ export default function App() {
               onUpdateCurrentUser={setCurrentUser}
               onSendMessage={handleSendMessage}
               onTriggerMatch={handleTriggerMatch}
+              onNavigateToBlindRoom={() => setActiveWorkspaceTab('blind-room')}
             />
           )}
 

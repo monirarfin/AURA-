@@ -12,6 +12,7 @@ interface AURAAppProps {
   onUpdateCurrentUser: (updated: UserProfile) => void;
   onSendMessage: (matchId: string, text: string) => void;
   onTriggerMatch: (matchId: string, customIcebreaker?: string) => void;
+  onNavigateToBlindRoom?: () => void;
 }
 
 interface SwipeCardProps {
@@ -356,7 +357,8 @@ export default function AURAApp({
   conversations,
   onUpdateCurrentUser,
   onSendMessage,
-  onTriggerMatch
+  onTriggerMatch,
+  onNavigateToBlindRoom
 }: AURAAppProps) {
   // Vibe Quiz Calibration States
   const [quizRefinedScores, setQuizRefinedScores] = useState<Record<string, number>>({});
@@ -777,6 +779,9 @@ export default function AURAApp({
               <DiscoveryFeed
                 currentUser={currentUser}
                 candidates={filteredCandidates}
+                conversations={conversations}
+                onUpdateCurrentUser={onUpdateCurrentUser}
+                onNavigateToBlindRoom={onNavigateToBlindRoom}
                 onSwipeLiked={(candidate) => {
                   setCurrentQuizCandidate(candidate);
                   setQuizStep('quiz');

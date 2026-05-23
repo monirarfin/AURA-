@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { UserProfile } from '../types';
+import { UserProfile, Conversation, UserTier } from '../types';
 import { calculateMatchScore } from '../utils/mbtiMatcher';
-import { Heart, X, Sparkles, MapPin, RefreshCw, Award, Shield, Zap, Info, ChevronRight, Activity, Cpu } from 'lucide-react';
+import { Heart, X, Sparkles, MapPin, RefreshCw, Award, Shield, Zap, Info, ChevronRight, Activity, Cpu, MessageSquare, ShieldAlert, Star } from 'lucide-react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
 import { audioEngine } from '../utils/audio';
 
@@ -11,6 +11,9 @@ interface DiscoveryFeedProps {
   onSwipeLiked: (candidate: UserProfile) => void;
   onSwipeSkipped: (candidate: UserProfile) => void;
   soundEnabled?: boolean;
+  conversations?: Conversation[];
+  onUpdateCurrentUser?: (updated: UserProfile) => void;
+  onNavigateToBlindRoom?: () => void;
 }
 
 interface InteractiveCardProps {
@@ -136,39 +139,39 @@ const InteractiveCard = ({
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
-  // Derive tilt and opacity from horizontal drag distance
-  const rotate = useTransform(x, [-200, 200], [-15, 15]);
-  const opacity = useTransform(x, [-200, -150, 0, 150, 200], [0.5, 0.9, 1, 0.9, 0.5]);
+  // High-fidelity dynamic rotation and fading physics
+  const rotate = useTransform(x, [-250, 250], [-20, 20]);
+  const opacity = useTransform(x, [-250, -150, 0, 150, 250], [0.6, 0.9, 1, 0.9, 0.6]);
 
-  // VIBE & SKIP stamp opacity
-  const vibeOpacity = useTransform(x, [0, 120], [0, 1]);
-  const skipOpacity = useTransform(x, [-120, 0], [1, 0]);
+  // Swipe Stamp interactive indicator levels
+  const vibeOpacity = useTransform(x, [0, 90], [0, 1]);
+  const skipOpacity = useTransform(x, [-90, 0], [1, 0]);
 
   const handleDragEnd = (_event: any, info: any) => {
     if (!isActive || isSwipingOut) return;
-    const threshold = 140;
+    const threshold = 120; // responsive snappier swipe trigger for Gen-Z speed
 
     if (info.offset.x > threshold) {
       setIsSwipingOut(true);
       setSwipeSide('right');
-      setTimeout(() => onSwipe(true), 200);
+      setTimeout(() => onSwipe(true), 150);
     } else if (info.offset.x < -threshold) {
       setIsSwipingOut(true);
       setSwipeSide('left');
-      setTimeout(() => onSwipe(false), 200);
+      setTimeout(() => onSwipe(false), 150);
     }
   };
 
   const badgeTierStyle = (tier: string) => {
     switch (tier) {
       case 'Elite':
-        return 'bg-[#c5a059] text-black border-[#c5a059]/50 font-bold';
+        return 'border-[#c5a059]/40 text-[#c5a059] font-bold bg-[#c5a059]/10 shadow-[0_0_12px_rgba(197,160,89,0.1)]';
       case 'Standard':
-        return 'bg-[#1a1a1e] text-[#c5a059] border-[#c5a059]/35';
+        return 'border-blue-500/30 text-blue-400 bg-blue-500/10';
       case 'Basic':
-        return 'bg-blue-950/80 text-blue-300 border-blue-500/30';
+        return 'border-amber-500/30 text-amber-400 bg-amber-500/10';
       default:
-        return 'bg-slate-900/60 text-slate-300 border-white/5';
+        return 'border-white/10 text-white/50 bg-white/5';
     }
   };
 
@@ -182,118 +185,100 @@ const InteractiveCard = ({
       animate={
         isSwipingOut
           ? { x: swipeSide === 'right' ? 600 : -600, rotate: swipeSide === 'right' ? 30 : -30, opacity: 0 }
-          : { x: 0, scale: isActive ? 1 : 0.94, y: isActive ? 0 : 12, opacity: isActive ? 1 : 0.6 }
+          : { x: 0, scale: isActive ? 1 : 0.94, y: isActive ? 0 : 14, opacity: isActive ? 1 : 0.5 }
       }
-      transition={{ type: "spring", stiffness: 300, damping: 25 }}
-      className={`absolute inset-0 bg-[#0c0c0e] border border-white/10 rounded-[2rem] overflow-hidden shadow-2xl flex flex-col ${
+      transition={{ type: "spring", stiffness: 450, damping: 28 }}
+      className={`absolute inset-0 bg-[#09090b] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] flex flex-col select-none ${
         isActive ? 'z-10 cursor-grab active:cursor-grabbing' : 'z-0 pointer-events-none'
       }`}
     >
-      {/* Background Image of candidate */}
+      {/* Background Image with modern filters */}
       <div className="absolute inset-0 w-full h-full select-none pointer-events-none">
         <img
           src={candidate.avatar}
           alt={candidate.name}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover select-none pointer-events-none transition-all duration-700 hover:scale-105"
           referrerPolicy="no-referrer"
         />
-        {/* Subtle gradients to enrich content layering */}
-        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/85 via-black/40 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-72 bg-gradient-to-t from-black via-black/80 to-transparent" />
+        {/* Cinematic shadows of background depth */}
+        <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-black/90 via-black/40 to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-[45%] bg-gradient-to-t from-black via-black/85 to-transparent pointer-events-none" />
       </div>
 
-      {/* Swipe Feedback Stamps (Only on active top card) */}
+      {/* Swipe Feedback Stamps (High contrast modern designs) */}
       {isActive && (
         <>
           <motion.div
             style={{ opacity: vibeOpacity }}
-            className="absolute top-28 left-8 border-4 border-[#c5a059] text-[#c5a059] font-black tracking-widest uppercase rounded-xl px-4 py-1.5 text-2xl font-mono rotate-[-12deg] z-20 shadow-lg pointer-events-none"
+            className="absolute top-24 left-8 border-4 border-[#DEFF9A] text-[#DEFF9A] font-black tracking-widest uppercase rounded-2xl px-5 py-2 text-2xl font-mono rotate-[-12deg] z-20 shadow-[0_0_20px_rgba(222,255,154,0.35)] pointer-events-none"
           >
-            VIBE ✨
+            SYNC ✨
           </motion.div>
           <motion.div
             style={{ opacity: skipOpacity }}
-            className="absolute top-28 right-8 border-4 border-red-500 text-red-400 font-black tracking-widest uppercase rounded-xl px-4 py-1.5 text-2xl font-mono rotate-[12deg] z-20 shadow-lg pointer-events-none"
+            className="absolute top-24 right-8 border-4 border-red-500 text-red-500 font-black tracking-widest uppercase rounded-2xl px-5 py-2 text-2xl font-mono rotate-[12deg] z-20 shadow-[0_0_20px_rgba(239,68,68,0.35)] pointer-events-none"
           >
             SKIP ⚔️
           </motion.div>
         </>
       )}
 
-      {/* Top Header Information Overlay */}
-      <div className="absolute top-5 left-5 right-5 flex justify-between items-start z-10 pointer-events-none">
-        <span className={`border px-3 py-1.5 rounded-full text-[9px] font-black font-mono uppercase tracking-widest shadow-md flex items-center gap-1 bg-[#121215]/90 backdrop-blur-md ${badgeTierStyle(candidate.tier)}`}>
-          {candidate.tier === 'Elite' && <Award className="w-3 h-3 text-black" />}
-          {candidate.tier === 'Standard' && <Shield className="w-3 h-3 text-[#c5a059]" />}
-          {candidate.tier === 'Basic' && <Zap className="w-3 h-3 text-blue-400" />}
-          {candidate.tier} Member
+      {/* Top Left Badge: Member Tier */}
+      <div className="absolute top-5 left-5 z-20 pointer-events-none">
+        <span className={`border px-3 py-1.5 rounded-full text-[8.5px] font-mono font-bold uppercase tracking-widest bg-black/60 backdrop-blur-md shadow-md flex items-center gap-1 transition-all ${badgeTierStyle(candidate.tier)}`}>
+          {candidate.tier === 'Elite' && <Award className="w-2.5 h-2.5 text-[#c5a059]" />}
+          {candidate.tier === 'Standard' && <Shield className="w-2.5 h-2.5 text-blue-400" />}
+          {candidate.tier === 'Basic' && <Zap className="w-2.5 h-2.5 text-amber-400" />}
+          <span>{candidate.tier}</span>
         </span>
-
-        <div className="flex flex-col items-end gap-1.5">
-          <span className="bg-black/95 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs font-bold text-[#c5a059] font-mono border border-[#c5a059]/30 shadow-md">
-            {candidate.mbti}
-          </span>
-          {score >= 95 ? (
-            <span className="bg-gradient-to-r from-yellow-500 via-[#c5a059] to-amber-600 text-black px-2.5 py-1 rounded-lg text-[9px] font-black font-mono tracking-wider shadow-lg flex items-center gap-1 border border-yellow-400/50 animate-pulse">
-              ✨ {score}% GOLDEN PAIR
-            </span>
-          ) : score >= 85 ? (
-            <span className="bg-emerald-500 text-black px-2.5 py-1 rounded-lg text-[9px] font-black font-mono tracking-wider shadow-md flex items-center gap-0.5 border border-emerald-400/40">
-              ⚡ {score}% SYNC RATE
-            </span>
-          ) : (
-            <span className="bg-black/60 backdrop-blur-sm text-[#a0afca] px-2.5 py-1 rounded-lg text-[9px] font-mono tracking-wider border border-white/5 shadow-md">
-              {score}% MATCH
-            </span>
-          )}
-        </div>
       </div>
 
-      {/* Frosted Glass Overlay/Drawer at the bottom for Name and Age - Made highly clickable to expand */}
-      <div className="mt-auto p-5 z-10 pointer-events-none">
+      {/* Top Right: Glowing Premium AI Badge with exact #DEFF9A color specs */}
+      <div className="absolute top-5 right-5 bg-[#DEFF9A] text-[#09090b] text-[9.5px] font-mono font-black py-1 px-3 rounded-full flex items-center gap-1 shadow-[0_0_15px_rgba(222,255,154,0.55)] tracking-wider uppercase select-none z-20 pointer-events-none">
+        <Sparkles className="w-2.5 h-2.5 text-black fill-current animate-pulse" />
+        <span>{score}% GOLDEN PAIR</span>
+      </div>
+
+      {/* 2. Glassmorphism Info Overlay (Frosted-glass container locked at the bottom 25% of the card) */}
+      <div className="absolute bottom-5 left-4 right-4 h-[25%] z-20 pointer-events-none">
         <div
           onClick={(e) => {
             e.stopPropagation();
             onExpand();
           }}
-          className="bg-black/45 hover:bg-black/60 backdrop-blur-md border border-white/5 hover:border-[#c5a059]/40 rounded-2xl p-4 text-left pointer-events-auto shadow-[0_12px_24px_rgba(0,0,0,0.6)] cursor-pointer transition-all group/drawer active:scale-[0.99] duration-200"
+          className="w-full h-full bg-[#0d0d11]/50 hover:bg-[#0d0d11]/65 backdrop-blur-xl border border-white/10 hover:border-[#DEFF9A]/30 rounded-[2rem] p-4 text-left pointer-events-auto shadow-[0_12px_36px_rgba(0,0,0,0.6)] cursor-pointer transition-all duration-200 group/drawer flex flex-col justify-between"
         >
-          <div className="flex items-baseline justify-between">
-            <h3 className="text-xl font-serif italic font-extrabold text-[#c5a059] flex items-baseline gap-1.5 group-hover/drawer:text-white transition-colors">
-              {candidate.name}
-              <span className="text-white/60 text-sm font-sans font-normal font-mono">({candidate.age})</span>
-            </h3>
-            
-            <div className="flex items-center gap-1 text-[10px] text-white/40 font-mono">
-              <MapPin className="w-3 h-3 text-[#c5a059]" />
-              <span>{candidate.location}</span>
+          <div>
+            <div className="flex items-baseline justify-between gap-2">
+              <h3 className="text-lg font-serif italic font-extrabold text-white flex items-baseline gap-1.5 transition-colors group-hover/drawer:text-[#DEFF9A]">
+                {candidate.name}
+                <span className="text-white/60 text-xs font-mono font-medium">({candidate.age})</span>
+              </h3>
+              
+              <div className="flex items-center gap-1 text-[9px] text-white/40 font-mono shrink-0">
+                <MapPin className="w-2.5 h-2.5 text-[#DEFF9A]" />
+                <span className="truncate max-w-[85px]">{candidate.location}</span>
+              </div>
             </div>
+
+            <p className="text-white/70 text-[10.5px] leading-relaxed font-sans line-clamp-2 mt-1.5 font-light">
+              {candidate.bio || "Secure digital signal established. Tap to explore cognitive compatibility indices & MBTI parameters."}
+            </p>
           </div>
 
-          <p className="text-[#c1cadb] text-xs leading-relaxed font-sans line-clamp-2 mt-2">
-            {candidate.bio || "Secure digital avatar calibrated. Let's explore lifestyle sync and core personality alignments inside secure nodes."}
-          </p>
-
-          <div className="flex items-center justify-between gap-2 mt-3.5 border-t border-white/5 pt-3">
-            <div className="flex flex-wrap gap-1">
-              {candidate.interests.slice(0, 2).map((interest, idx) => (
-                <span
-                  key={idx}
-                  className="bg-white/5 border border-white/10 px-2 py-0.5 rounded-md text-[9px] text-white/50 font-mono"
-                >
-                  #{interest.toUpperCase()}
-                </span>
-              ))}
-              {candidate.interests.length > 2 && (
-                <span className="text-[9px] text-white/30 font-mono px-1 py-0.5">
-                  +{candidate.interests.length - 2}
-                </span>
-              )}
+          <div className="flex items-center justify-between gap-1 border-t border-white/5 pt-2 mt-auto">
+            <div className="flex items-center gap-1.5">
+              <span className="bg-[#DEFF9A]/10 text-[#DEFF9A] text-[8.5px] font-mono font-bold px-2 py-0.5 rounded border border-[#DEFF9A]/20 uppercase">
+                {candidate.mbti}
+              </span>
+              <span className="text-[9px] text-white/40 font-mono truncate max-w-[120px]">
+                {candidate.interests[0] ? `#${candidate.interests[0].toUpperCase()}` : ''}
+              </span>
             </div>
 
-            <span className="flex items-center gap-1 font-mono text-[9px] tracking-wider text-[#c5a059]/80 group-hover/drawer:text-[#c5a059] bg-[#c5a059]/10 rounded-md px-2 py-1 border border-[#c5a059]/15">
-              <span>EXPLORE DOSSIER</span>
-              <ChevronRight className="w-3 h-3 group-hover/drawer:translate-x-0.5 transition-transform" />
+            <span className="flex items-center gap-0.5 font-mono text-[9px] font-bold text-[#DEFF9A] tracking-wider group-hover/drawer:translate-x-0.5 transition-transform">
+              <span>EXPLORE</span>
+              <ChevronRight className="w-3 h-3 text-[#DEFF9A]" />
             </span>
           </div>
         </div>
@@ -302,17 +287,246 @@ const InteractiveCard = ({
   );
 };
 
+/**
+ * Helper to compute deterministic Dating Intents for mock profiles
+ */
+const getDatingIntent = (id: string): string => {
+  const intents = ['Long-term', 'Hang out', 'Casual', 'Intimate without commitments'];
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return intents[Math.abs(hash) % intents.length];
+};
+
+/**
+ * Quick 5-question high-fidelity MBTI & Preference questions
+ */
+const mbtiAssessmentQuestions = [
+  {
+    theme: "AURA RADIATION FIELD",
+    question: "At a busy neon rooftop exhibition or tech launch gathering, you find that you...",
+    options: [
+      { key: "A" as const, text: "Gain massive fuel and drive by introducing yourself, chatting, and circulating with different cliques.", code: "E" },
+      { key: "B" as const, text: "Preserve your energy reservoirs, enjoying deep, isolated 1-on-1 private vibe dialogues.", code: "I" }
+    ]
+  },
+  {
+    theme: "CONSCIOUSNESS CORE BLUEPRINT",
+    question: "When exploring future abstract possibilities, art, projects, or cosmic theories...",
+    options: [
+      { key: "A" as const, text: "Gravitate immediately towards wild speculative predictions, complex metaphors, and future-forward systems.", code: "N" },
+      { key: "B" as const, text: "Rely upon tangible sensory logic, practical present actions, historical precedents, and real details.", code: "S" }
+    ]
+  },
+  {
+    theme: "DECISION-MAKING ARCHITECTURE",
+    question: "When relationship coordination or lifestyle friction issues arise, you solve them using...",
+    options: [
+      { key: "A" as const, text: "Unbiased analytical logic, striving for absolute consistency, structural truth, and optimization.", code: "T" },
+      { key: "B" as const, text: "Deep heart-centered empathy streams, personal values alignment, and restoring emotional harmony.", code: "F" }
+    ]
+  },
+  {
+    theme: "TEMPORAL TIMELINE SCHEDULING",
+    question: "Preparing detail paths for trips, dinner bookings, and calendar interlock points...",
+    options: [
+      { key: "A" as const, text: "Feels best with a carefully calibrated, scheduled plan and pre-determined timeline parameters.", code: "J" },
+      { key: "B" as const, text: "Is most satisfying when kept completely fluid, open-ended, and dynamically adaptive to current vibes.", code: "P" }
+    ]
+  },
+  {
+    theme: "SERENDIPITY VS MATRIX THEORY",
+    question: "Which lifestyle alignment paradigm makes you feel most centered?",
+    options: [
+      { key: "A" as const, text: "Empirical proof points, technological precision matching, and structured compatibility scores.", code: "T" },
+      { key: "B" as const, text: "Magnetic energy codes, intuitive chemistry, and serendipitous chaos of pure untamed connection.", code: "F" }
+    ]
+  }
+];
+
 export default function DiscoveryFeed({
   currentUser,
   candidates,
   onSwipeLiked,
   onSwipeSkipped,
-  soundEnabled = true
+  soundEnabled = true,
+  conversations = [],
+  onUpdateCurrentUser,
+  onNavigateToBlindRoom
 }: DiscoveryFeedProps) {
+  // Onboarding Wizard Progression State
+  const [isOnboardingCompleted, setIsOnboardingCompleted] = useState<boolean>(() => {
+    return localStorage.getItem('aura_onboarding_completed') === 'true';
+  });
+  const [onboardingStep, setOnboardingStep] = useState<number>(1); // 1 = Base info, 2 = Intent Matrix, 3 = MBTI Assessment, 4 = AI Aura Loading
+
+  // Onboarding Form States
+  const [onboardName, setOnboardName] = useState<string>(currentUser.name || 'Arfin Ahmed');
+  const [onboardAge, setOnboardAge] = useState<number>(currentUser.age || 26);
+  const [onboardGender, setOnboardGender] = useState<'Male' | 'Female' | 'Non-binary'>(currentUser.gender || 'Male');
+  const [onboardPref, setOnboardPref] = useState<'Male' | 'Female' | 'Non-binary' | 'All'>('All');
+  const [selectedIntent, setSelectedIntent] = useState<string>(() => {
+    return localStorage.getItem('aura_dating_intent') || 'Long-term';
+  });
+
+  // MBTI quick assessment state matching
+  const [mbtiAnswers, setMbtiAnswers] = useState<Record<number, 'A' | 'B'>>({});
+
+  // AI mapping logs timers
+  const [aiLoadingLogIndex, setAiLoadingLogIndex] = useState<number>(0);
+  const aiLoadingLogs = [
+    "Establishing secure quantum-encrypted aura handshake node...",
+    "Scanning bio-vibrational frequencies and cognitive waveforms...",
+    "Extracting MBTI neurological metrics & alignment structures...",
+    "Parsing selected intention matrices with Bangladesh local grid database...",
+    "Synthesizing spiritual compatibility parameters on real-time neural web...",
+    "Locking in decentralized private chat filtering protocols...",
+    "Generating premium golden ratio compatibility pairs. Encryption sync'd!"
+  ];
+
   const [index, setIndex] = useState(0);
   const [expandedCandidate, setExpandedCandidate] = useState<UserProfile | null>(null);
 
-  const activeCandidate = candidates[index];
+  // Stateful state of Premium / Limits warnings modal popups
+  const [popupContent, setPopupContent] = useState<{
+    title: string;
+    message: string;
+    actionText?: string;
+    actionTier?: 'Basic' | 'Standard' | 'Elite';
+    onAction?: () => void;
+  } | null>(null);
+
+  // Filter candidates based on preference (Step 1 preference filter)
+  const preferenceFiltered = React.useMemo(() => {
+    return candidates.filter((c) => {
+      if (onboardPref === 'All') return true;
+      return c.gender === onboardPref;
+    });
+  }, [candidates, onboardPref]);
+
+  // Priority Filter Matching: candidate sorting by selected Dating Intent
+  const sortedAndFilteredCandidates = React.useMemo(() => {
+    const matching = preferenceFiltered.filter((c) => getDatingIntent(c.id) === selectedIntent);
+    const nonMatching = preferenceFiltered.filter((c) => getDatingIntent(c.id) !== selectedIntent);
+    return [...matching, ...nonMatching];
+  }, [preferenceFiltered, selectedIntent]);
+
+  const activeCandidate = sortedAndFilteredCandidates[index];
+
+  // AI Loading Step Timer and Sync Update hook
+  React.useEffect(() => {
+    if (onboardingStep === 4) {
+      const interval = setInterval(() => {
+        setAiLoadingLogIndex((prev) => {
+          if (prev < aiLoadingLogs.length - 1) {
+            return prev + 1;
+          } else {
+            clearInterval(interval);
+            setTimeout(() => {
+              // Extract calculated MBTI from answers
+              const letter1 = mbtiAnswers[0] === 'A' ? 'E' : 'I';
+              const letter2 = mbtiAnswers[1] === 'A' ? 'N' : 'S';
+              const letter3 = mbtiAnswers[2] === 'A' ? 'T' : 'F';
+              const letter4 = mbtiAnswers[3] === 'A' ? 'J' : 'P';
+              const calculatedMbti = `${letter1}${letter2}${letter3}${letter4}`;
+
+              if (onUpdateCurrentUser) {
+                onUpdateCurrentUser({
+                  ...currentUser,
+                  name: onboardName,
+                  age: onboardAge,
+                  gender: onboardGender,
+                  mbti: calculatedMbti,
+                  bio: `AURA mapped matching code: ${calculatedMbti}. Optimized dating intent: ${selectedIntent}. Location synchronized.`,
+                });
+              }
+
+              localStorage.setItem('aura_dating_intent', selectedIntent);
+              localStorage.setItem('aura_onboarding_completed', 'true');
+              setIsOnboardingCompleted(true);
+            }, 850);
+            return prev;
+          }
+        });
+      }, 550);
+
+      return () => clearInterval(interval);
+    }
+  }, [onboardingStep]);
+
+  const handleUpgradeTier = (tier: UserTier) => {
+    if (onUpdateCurrentUser) {
+      onUpdateCurrentUser({
+        ...currentUser,
+        tier
+      });
+    }
+    setPopupContent(null);
+  };
+
+  const handleMessageClick = (candidate: UserProfile) => {
+    const tier = currentUser.tier;
+    
+    if (tier === 'Free') {
+      setPopupContent({
+        title: 'Upgrade to Basic to chat',
+        message: `Your account is currently on the Free tier. Free tier members are restricted from initiating chats with dating candidates. Upgrade to Basic (100 BDT) or Standard (300 BDT) to unlock.`,
+        actionText: 'UPGRADE TO BASIC',
+        actionTier: 'Basic',
+        onAction: () => handleUpgradeTier('Basic')
+      });
+      if (soundEnabled) {
+        audioEngine.playRequestPing();
+      }
+      return;
+    }
+
+    if (tier === 'Basic') {
+      // 1. Same-tier check: candidates must be Basic as well
+      if (candidate.tier !== 'Basic') {
+        setPopupContent({
+          title: 'Same-Tier Chat Restriction',
+          message: `As a Basic tier member, you can exclusively message other Basic tier members. ${candidate.name} holds a "${candidate.tier}" plan. Upgrade to Standard or Elite to unlock cross-tier communication.`,
+          actionText: 'UPGRADE TO STANDARD',
+          actionTier: 'Standard',
+          onAction: () => handleUpgradeTier('Standard')
+        });
+        if (soundEnabled) {
+          audioEngine.playRequestPing();
+        }
+        return;
+      }
+
+      // 2. Limit to 50 active chats check
+      if (conversations.length >= 50) {
+        setPopupContent({
+          title: 'Chat Limit Reached (50/50)',
+          message: `Your Basic tier limits you to a maximum of 50 active chats. Upgrade to Standard or Elite to unleash unlimited communication.`,
+          actionText: 'UPGRADE TO STANDARD',
+          actionTier: 'Standard',
+          onAction: () => handleUpgradeTier('Standard')
+        });
+        if (soundEnabled) {
+          audioEngine.playRequestPing();
+        }
+        return;
+      }
+    }
+
+    // Elite & Standard: Unlock everything
+    // Let's activate conversation/chat by swiping them liked directly so it sets up a chat or does a match sync!
+    if (soundEnabled) {
+       audioEngine.playMatchChime();
+    }
+    onSwipeLiked(candidate);
+    
+    setPopupContent({
+      title: 'Decentralized Connection Active',
+      message: `Successfully synchronized signals with ${candidate.name}! Open your Active Chats to begin secure, encrypted communications under the screenshot filter.`,
+      actionText: 'ACKNOWLEDGE'
+    });
+  };
 
   const handleSwipe = (liked: boolean) => {
     if (!activeCandidate) return;
@@ -417,31 +631,55 @@ export default function DiscoveryFeed({
         </AnimatePresence>
       </div>
 
-      {/* Control Buttons for Tinder Swiping */}
+      {/* 4. Floating Action Row (Under the card stack: X, Star/Up, Heart) */}
       {activeCandidate && !expandedCandidate && (
-        <div className="flex items-center justify-center gap-6 mt-8">
+        <div className="flex items-center justify-center gap-7 mt-8 z-30">
+          {/* 'X' Reject Button */}
           <button
             onClick={() => handleSwipe(false)}
-            className="w-14 h-14 bg-[#141417] hover:bg-red-950/20 border border-white/5 hover:border-red-500/40 rounded-full flex items-center justify-center text-red-400 hover:text-red-500 transition-all shadow-xl active:scale-90 cursor-pointer group"
-            title="Skip Candidate"
+            className="w-14 h-14 bg-[#0d0d11]/45 backdrop-blur-xl hover:bg-red-500/10 border border-white/10 hover:border-red-500/30 rounded-full flex items-center justify-center text-red-400 transition-all duration-300 shadow-[0_8px_24px_rgba(0,0,0,0.5)] active:scale-90 cursor-pointer group"
+            title="Reject Vibe (Skip)"
           >
-            <X className="w-6 h-6 transition-transform group-hover:scale-110" />
+            <X className="w-6 h-6 transition-transform group-hover:rotate-[-12deg] group-hover:scale-110 duration-200" />
           </button>
 
+          {/* 'Star/Up' Blind Room-Date Invite Button (for Elite only) */}
           <button
-            onClick={handleReset}
-            className="w-10 h-10 bg-[#141417]/80 hover:bg-[#141417] text-white/40 hover:text-[#c5a059] border border-white/5 rounded-full flex items-center justify-center transition-all active:scale-90 cursor-pointer"
-            title="Rewind / Restart Stack"
+            onClick={() => {
+              if (currentUser.tier === 'Elite') {
+                if (onNavigateToBlindRoom) {
+                  onNavigateToBlindRoom();
+                }
+              } else {
+                setPopupContent({
+                  title: 'Elite Feature Required',
+                  message: 'Blind Room-Date invites are exclusive to Elite custom-encrypted tier members. Upgrade now to invite matches into our real-time private Blind Room Date component.',
+                  actionText: 'UPGRADE TO ELITE',
+                  actionTier: 'Elite',
+                  onAction: () => handleUpgradeTier('Elite')
+                });
+                if (soundEnabled) {
+                  audioEngine.playRequestPing();
+                }
+              }
+            }}
+            className={`w-12 h-12 rounded-full border flex items-center justify-center transition-all duration-300 shadow-[0_8px_24px_rgba(0,0,0,0.5)] active:scale-90 cursor-pointer group ${
+              currentUser.tier === 'Elite'
+                ? 'bg-gradient-to-tr from-[#c5a059]/20 to-purple-900/30 backdrop-blur-xl border-[#c5a059]/50 text-[#c5a059] shadow-[0_0_15px_rgba(197,160,89,0.3)] hover:scale-110'
+                : 'bg-[#0d0d11]/30 backdrop-blur-xl border-white/5 text-white/30 hover:text-white/60 hover:border-white/10 hover:scale-105'
+            }`}
+            title="Direct Blind Date Invite (Elite member benefit)"
           >
-            <RefreshCw className="w-4 h-4" />
+            <Star className={`w-5 h-5 transition-transform duration-300 group-hover:rotate-[72deg] ${currentUser.tier === 'Elite' ? 'fill-current text-[#c5a059]' : ''}`} />
           </button>
 
+          {/* 'Heart' Like Button with Glowing Accent */}
           <button
             onClick={() => handleSwipe(true)}
-            className="w-14 h-14 bg-gradient-to-tr from-[#c5a059]/20 to-yellow-500/10 hover:from-[#c5a059] hover:to-[#dfba70] border border-[#c5a059]/30 rounded-full flex items-center justify-center text-[#c5a059] hover:text-black transition-all shadow-xl shadow-yellow-500/5 active:scale-90 cursor-pointer group"
-            title="Like / Trigger Sync"
+            className="w-14 h-14 bg-[#0d0d11]/45 backdrop-blur-xl hover:bg-[#DEFF9A]/10 border border-white/10 hover:border-[#DEFF9A]/40 rounded-full flex items-center justify-center text-[#DEFF9A] transition-all duration-300 shadow-[0_8px_24px_rgba(0,0,0,0.5)] hover:shadow-[0_0_18px_rgba(222,255,154,0.35)] active:scale-90 cursor-pointer group"
+            title="Like Vibe Check (Sync)"
           >
-            <Heart className="w-6 h-6 fill-current transition-transform group-hover:scale-110" />
+            <Heart className="w-6 h-6 fill-current transition-transform group-hover:scale-120 duration-200" />
           </button>
         </div>
       )}
@@ -683,23 +921,47 @@ export default function DiscoveryFeed({
 
             {/* Direct Dossier SWIPE Action Overlays */}
             <div className="pt-4 mt-auto">
-              <div className="grid grid-cols-2 gap-3 border-t border-white/5 pt-4">
+              <div className="grid grid-cols-3 gap-2 border-t border-white/5 pt-4">
                 <button
                   onClick={() => handleSwipeSpecificCard(expandedCandidate, false)}
-                  className="bg-white/5 hover:bg-red-950/20 active:scale-95 text-red-400 hover:text-red-500 border border-white/10 hover:border-red-500/25 py-3.5 px-4 rounded-2xl font-mono text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="bg-white/5 hover:bg-red-950/20 active:scale-95 text-red-400 hover:text-red-500 border border-white/10 hover:border-red-500/25 py-3 px-2 rounded-xl font-mono text-[10px] font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-1"
                 >
                   <X className="w-4 h-4" />
                   <span>SKIP METRIC</span>
                 </button>
 
                 <button
+                  onClick={() => handleMessageClick(expandedCandidate)}
+                  className="bg-blue-950/30 hover:bg-blue-900/40 active:scale-95 text-blue-400 hover:text-blue-300 border border-blue-500/20 hover:border-blue-500/45 py-3 px-2 rounded-xl font-mono text-[10px] font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-1"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>MESSAGE</span>
+                </button>
+
+                <button
                   onClick={() => handleSwipeSpecificCard(expandedCandidate, true)}
-                  className="bg-gradient-to-r from-[#c5a059] to-amber-600 hover:from-[#d4b57a] hover:to-amber-500 active:scale-95 text-black py-3.5 px-4 rounded-2xl font-mono text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-[#c5a059]/10"
+                  className="bg-gradient-to-r from-[#c5a059] to-amber-600 hover:from-[#d4b57a] hover:to-amber-500 active:scale-95 text-black py-3 px-2 rounded-xl font-mono text-[10px] font-extrabold transition-all cursor-pointer flex flex-col items-center justify-center gap-1 shadow-lg shadow-[#c5a059]/10"
                 >
                   <Heart className="w-4 h-4 fill-current" />
                   <span>INIT SYNC</span>
                 </button>
               </div>
+
+              {/* Unique Blind Date option for Elite users */}
+              {currentUser.tier === 'Elite' && (
+                <button
+                  onClick={() => {
+                    if (onNavigateToBlindRoom) {
+                      onNavigateToBlindRoom();
+                    }
+                  }}
+                  className="w-full mt-3 bg-gradient-to-r from-[#c5a059]/15 via-purple-950/50 to-[#c5a059]/15 hover:from-[#c5a059]/35 hover:via-purple-900/50 hover:to-[#c5a059]/35 border border-[#c5a059]/40 hover:border-[#c5a059]/80 rounded-xl py-3 text-[#c5a059] font-mono text-[10px] font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_4px_12px_rgba(197,160,89,0.1)]"
+                >
+                  <Sparkles className="w-4 h-4 text-[#c5a059] animate-pulse" />
+                  <span>LAUNCH SECURE BLIND DATE</span>
+                </button>
+              )}
+
               <p className="text-[9px] text-center text-white/30 font-mono italic mt-3">
                 Decisively interlocks signals and closes security file.
               </p>
@@ -707,6 +969,59 @@ export default function DiscoveryFeed({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Dynamic Popups for Premium/Same-Tier Restrictions */}
+      {popupContent && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="w-full max-w-sm bg-[#0d0d0f] border border-[#c5a059]/30 rounded-3xl p-6 space-y-5 text-center shadow-2xl relative overflow-hidden"
+          >
+            {/* Top gold visual border decoration */}
+            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-[#c5a059]/10 via-[#c5a059]/70 to-[#c5a059]/10" />
+            
+            <div className="w-12 h-12 rounded-full bg-[#c5a059]/10 border border-[#c5a059]/30 flex items-center justify-center mx-auto text-[#c5a059]">
+              <ShieldAlert className="w-6 h-6" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-[#c5a059] font-serif italic text-base font-bold">
+                {popupContent.title}
+              </h3>
+              <p className="text-white/70 text-xs leading-relaxed">
+                {popupContent.message}
+              </p>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              {popupContent.actionText && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (popupContent.onAction) {
+                      popupContent.onAction();
+                    } else {
+                      setPopupContent(null);
+                    }
+                  }}
+                  className="w-full py-2.5 bg-gradient-to-r from-[#c5a059] to-amber-600 hover:from-[#d4b57a] hover:to-amber-500 text-black text-xs font-mono font-black rounded-xl shadow-lg transition-all cursor-pointer active:scale-95 uppercase tracking-wider"
+                >
+                  {popupContent.actionText}
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setPopupContent(null)}
+                className="w-full py-2 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white text-[11px] font-mono rounded-xl border border-white/5 transition-colors cursor-pointer"
+              >
+                DISMISS SYSTEM NODE
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
