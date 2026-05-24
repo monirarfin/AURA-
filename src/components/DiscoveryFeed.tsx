@@ -372,6 +372,7 @@ export default function DiscoveryFeed({
 
   // MBTI quick assessment state matching
   const [mbtiAnswers, setMbtiAnswers] = useState<Record<number, 'A' | 'B'>>({});
+  const [activeMbtiQuestionIndex, setActiveMbtiQuestionIndex] = useState<number>(0);
 
   // AI mapping logs timers
   const [aiLoadingLogIndex, setAiLoadingLogIndex] = useState<number>(0);
@@ -571,8 +572,322 @@ export default function DiscoveryFeed({
     setExpandedCandidate(null);
   };
 
+  if (!isOnboardingCompleted) {
+    return (
+      <div className="w-full min-h-[640px] flex items-center justify-center p-4 relative overflow-hidden bg-[#070709] select-none">
+        {/* Glowing background ambience elements */}
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-purple-900/10 blur-[130px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#DEFF9A]/5 blur-[130px] pointer-events-none" />
+
+        <AnimatePresence mode="wait">
+          {onboardingStep === 1 && (
+            <motion.div
+              key="step1"
+              initial={{ opacity: 0, scale: 0.98, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: -15 }}
+              transition={{ duration: 0.25 }}
+              className="w-full max-w-sm bg-[#0d0d11]/60 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-8 space-y-6 relative shadow-2xl text-center"
+            >
+              <div className="space-y-2">
+                <span className="inline-block text-[10px] font-mono tracking-widest text-[#DEFF9A] uppercase bg-[#DEFF9A]/10 px-3 py-1 rounded-full">Phase 01: Identity Core</span>
+                <h2 className="text-3xl font-serif italic text-white leading-tight font-extrabold">Introduce your <span className="text-[#DEFF9A]">Aura</span></h2>
+                <p className="text-white/40 text-[11px] font-sans">Set up your profile credentials for decentralized sync matching.</p>
+              </div>
+
+              <div className="space-y-4">
+                {/* Name Input */}
+                <div className="space-y-1.5 text-left">
+                  <label className="text-[10px] uppercase tracking-wider text-white/50 font-mono font-bold">Your Custom Alias / Name</label>
+                  <input
+                    type="text"
+                    value={onboardName}
+                    onChange={(e) => setOnboardName(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-[#DEFF9A]/40 focus:outline-none transition-colors rounded-xl px-4 py-3 text-white text-xs font-medium font-mono animate-none"
+                    placeholder="Arfin Ahmed"
+                  />
+                </div>
+
+                {/* Age Input */}
+                <div className="space-y-1.5 text-left">
+                  <label className="text-[10px] uppercase tracking-wider text-white/50 font-mono font-bold flex justify-between">
+                    <span>Age</span>
+                    <span className="text-[#DEFF9A] font-black">{onboardAge}</span>
+                  </label>
+                  <input
+                    type="range"
+                    min="18"
+                    max="65"
+                    value={onboardAge}
+                    onChange={(e) => setOnboardAge(parseInt(e.target.value))}
+                    className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[#DEFF9A]"
+                  />
+                  <div className="flex justify-between text-[9px] font-mono text-white/30">
+                    <span>18 YEARS</span>
+                    <span>65 YEARS</span>
+                  </div>
+                </div>
+
+                {/* Gender Options */}
+                <div className="space-y-1.5 text-left">
+                  <label className="text-[10px] uppercase tracking-wider text-white/50 font-mono font-bold">My Binary/Quantum Field</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['Male', 'Female', 'Non-binary'] as const).map((genderOption) => (
+                      <button
+                        key={genderOption}
+                        type="button"
+                        onClick={() => setOnboardGender(genderOption)}
+                        className={`py-2.5 rounded-xl text-[10px] font-bold font-mono border transition-all cursor-pointer ${
+                          onboardGender === genderOption
+                            ? 'bg-[#DEFF9A]/10 border-[#DEFF9A] text-[#DEFF9A] shadow-[0_0_12px_rgba(222,255,154,0.15)] bg-[#DEFF9A]/20'
+                            : 'bg-white/5 border-white/5 text-white/50 hover:border-white/10'
+                        }`}
+                      >
+                        {genderOption.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Match Preference */}
+                <div className="space-y-1.5 text-left">
+                  <label className="text-[10px] uppercase tracking-wider text-white/50 font-mono font-bold">Interlock Preferences</label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {(['Male', 'Female', 'Non-binary', 'All'] as const).map((prefOption) => (
+                      <button
+                        key={prefOption}
+                        type="button"
+                        onClick={() => setOnboardPref(prefOption)}
+                        className={`py-2 rounded-lg text-[9px] font-bold font-mono border transition-all cursor-pointer truncate ${
+                          onboardPref === prefOption
+                            ? 'bg-[#DEFF9A]/10 border-[#DEFF9A] text-[#DEFF9A] shadow-[0_0_10px_rgba(222,255,154,0.12)] bg-[#DEFF9A]/15'
+                            : 'bg-white/5 border-white/5 text-white/50 hover:border-white/10'
+                        }`}
+                      >
+                        {prefOption === 'All' ? 'ALL FIELDS' : prefOption.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (soundEnabled) {
+                    audioEngine.playRequestPing();
+                  }
+                  setOnboardingStep(2);
+                }}
+                className="w-full py-4 bg-gradient-to-r from-[#DEFF9A] to-[#c5a059] hover:from-[#eaffb5] hover:to-[#dfba70] text-black text-xs font-mono font-black rounded-2xl shadow-lg transition-all active:scale-95 duration-200 cursor-pointer uppercase tracking-wider mt-2 border border-black/10"
+              >
+                Sync Next Interface &rarr;
+              </button>
+            </motion.div>
+          )}
+
+          {onboardingStep === 2 && (
+            <motion.div
+              key="step2"
+              initial={{ opacity: 0, scale: 0.98, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: -15 }}
+              transition={{ duration: 0.25 }}
+              className="w-full max-w-sm bg-[#0d0d11]/60 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-8 space-y-6 relative shadow-2xl text-center"
+            >
+              <div className="space-y-2">
+                <span className="inline-block text-[10px] font-mono tracking-widest text-[#DEFF9A] uppercase bg-[#DEFF9A]/10 px-3 py-1 rounded-full">Phase 02: Dating Intent Matrix</span>
+                <h2 className="text-3xl font-serif italic text-white leading-tight font-extrabold">Define alignment <span className="text-[#DEFF9A]">intent</span></h2>
+                <p className="text-white/40 text-[11px] font-sans">Selected intents prioritize candidates instantly on your swipe stack.</p>
+              </div>
+
+              <div className="space-y-2.5 text-left">
+                {[
+                  { intent: 'Long-term', desc: 'Secure long-term life matching nodes, shared futures' },
+                  { intent: 'Hang out', desc: 'Low friction social cafes, explorations, dynamic chat' },
+                  { intent: 'Casual', desc: 'Fluid connections, spontaneous play, zero overheads' },
+                  { intent: 'Intimate without commitments', desc: 'Pure physical synchronicities, deep discrete attraction' }
+                ].map((item) => (
+                  <button
+                    key={item.intent}
+                    type="button"
+                    onClick={() => {
+                      if (soundEnabled) {
+                        audioEngine.playRequestPing();
+                      }
+                      setSelectedIntent(item.intent);
+                    }}
+                    className={`w-full p-4 rounded-2xl text-left border transition-all cursor-pointer flex flex-col space-y-1 items-stretch ${
+                      selectedIntent === item.intent
+                        ? 'bg-[#DEFF9A]/5 border-[#DEFF9A] text-white shadow-[0_0_15px_rgba(222,255,154,0.08)] bg-[#DEFF9A]/10'
+                        : 'bg-white/5 border-white/5 text-white/50 hover:bg-white/[0.07] hover:border-white/10'
+                    }`}
+                  >
+                    <span className={`text-[11.5px] font-mono font-bold ${selectedIntent === item.intent ? 'text-[#DEFF9A]' : 'text-white'}`}>
+                      {item.intent.toUpperCase()}
+                    </span>
+                    <span className="text-[10px] text-white/40 font-light font-sans">{item.desc}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (soundEnabled) {
+                      audioEngine.playRequestPing();
+                    }
+                    setOnboardingStep(1);
+                  }}
+                  className="w-1/3 py-3.5 bg-white/5 border border-white/10 hover:bg-white/10 text-white/60 hover:text-white rounded-2xl transition-colors text-xs font-mono font-bold cursor-pointer uppercase"
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (soundEnabled) {
+                      audioEngine.playRequestPing();
+                    }
+                    setOnboardingStep(3);
+                  }}
+                  className="w-2/3 py-3.5 bg-gradient-to-r from-[#DEFF9A] to-[#c5a059] hover:from-[#eaffb5] hover:to-[#dfba70] text-black text-xs font-mono font-black rounded-2xl shadow-lg transition-transform active:scale-95 duration-200 cursor-pointer uppercase tracking-wider"
+                >
+                  Continue &rarr;
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {onboardingStep === 3 && (
+            <motion.div
+              key="step3"
+              initial={{ opacity: 0, scale: 0.98, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: -15 }}
+              transition={{ duration: 0.25 }}
+              className="w-full max-w-sm bg-[#0d0d11]/60 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-8 space-y-6 relative shadow-2xl text-center"
+            >
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-mono tracking-widest text-[#DEFF9A] uppercase bg-[#DEFF9A]/10 px-3 py-1 rounded-full">
+                    Step {activeMbtiQuestionIndex + 1} of 5
+                  </span>
+                  <span className="text-[9px] font-mono text-white/40 font-bold uppercase tracking-wider">
+                    MBTI METRICS
+                  </span>
+                </div>
+                <div className="text-[10px] font-mono text-[#c5a059] uppercase tracking-wider pt-1">
+                  {mbtiAssessmentQuestions[activeMbtiQuestionIndex].theme}
+                </div>
+                <h3 className="text-sm font-sans text-white/90 leading-relaxed font-semibold min-h-[52px] text-left pt-1 font-medium">
+                  {mbtiAssessmentQuestions[activeMbtiQuestionIndex].question}
+                </h3>
+              </div>
+
+              <div className="space-y-3 text-left">
+                {mbtiAssessmentQuestions[activeMbtiQuestionIndex].options.map((option) => (
+                  <button
+                    key={option.key}
+                    type="button"
+                    onClick={() => {
+                      if (soundEnabled) {
+                        audioEngine.playRequestPing();
+                      }
+                      setMbtiAnswers(prev => ({ ...prev, [activeMbtiQuestionIndex]: option.key }));
+                      if (activeMbtiQuestionIndex < mbtiAssessmentQuestions.length - 1) {
+                        setActiveMbtiQuestionIndex(prev => prev + 1);
+                      } else {
+                        setOnboardingStep(4);
+                      }
+                    }}
+                    className="w-full p-4 rounded-2xl text-left bg-[#0c0c10] border border-white/5 hover:border-white/10 hover:bg-white/[0.03] text-white/70 hover:text-white text-[11px] font-sans transition-all cursor-pointer flex justify-between items-center group/opt gap-3"
+                  >
+                    <span className="leading-snug">{option.text}</span>
+                    <span className="bg-white/5 border border-white/5 px-2 py-1 rounded text-[8px] font-mono text-white/40 group-hover/opt:text-[#DEFF9A] group-hover/opt:border-[#DEFF9A]/30 transition-colors shrink-0">
+                      CODE: {option.code}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex justify-between items-center text-[10px] font-mono text-white/40 border-t border-white/5 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (activeMbtiQuestionIndex > 0) {
+                      setActiveMbtiQuestionIndex(prev => prev - 1);
+                    } else {
+                      setOnboardingStep(2);
+                    }
+                  }}
+                  className="hover:text-[#DEFF9A] duration-150 transition-colors font-bold uppercase tracking-wide cursor-pointer flex items-center gap-1 text-[9px]"
+                >
+                  &larr; PREVIOUS PARAM
+                </button>
+                <span className="font-bold">{Math.round(((activeMbtiQuestionIndex + 1) / 5) * 100)}% DETECTED</span>
+              </div>
+            </motion.div>
+          )}
+
+          {onboardingStep === 4 && (
+            <motion.div
+              key="step4"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.05 }}
+              className="w-full max-w-sm bg-[#08080c]/90 border border-[#c5a059]/30 rounded-[2.5rem] p-10 space-y-8 text-center relative shadow-2xl overflow-hidden"
+            >
+              <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#DEFF9A] to-transparent animate-pulse" />
+
+              <div className="relative">
+                <div className="w-24 h-24 mx-auto rounded-full border-4 border-[#DEFF9A]/20 flex items-center justify-center relative shadow-[0_0_30px_rgba(222,255,154,0.15)] bg-black/60">
+                  <div className="absolute inset-2 rounded-full border border-[#c5a059]/40 border-dashed animate-spin duration-10000" />
+                  <div className="absolute inset-0 rounded-full border-2 border-t-[#DEFF9A] border-r-transparent border-b-[#c5a059] border-l-transparent animate-spin duration-1000" />
+                  <Sparkles className="w-8 h-8 text-[#DEFF9A] animate-pulse" />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="text-xl font-serif italic font-extrabold text-white">AI Mapping Current Aura</h3>
+                <p className="text-xs text-[#DEFF9A] font-mono tracking-widest uppercase animate-pulse">Syncing Cognitive Core...</p>
+              </div>
+
+              <div className="bg-[#040406] border border-white/5 rounded-xl p-4 min-h-[85px] text-left flex flex-col justify-center">
+                <p className="text-[10px] font-mono text-[#DEFF9A] font-semibold leading-relaxed animate-fade-in text-center flex items-center justify-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-[#DEFF9A] rounded-full animate-ping shrink-0" />
+                  <span>{aiLoadingLogs[aiLoadingLogIndex]}</span>
+                </p>
+                <div className="mt-2.5 w-full bg-white/5 h-1 rounded-full overflow-hidden">
+                  <div 
+                    className="bg-[#DEFF9A] h-full rounded-full transition-all duration-300" 
+                    style={{ width: `${((aiLoadingLogIndex + 1) / aiLoadingLogs.length) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              <p className="text-[9px] text-white/30 font-mono italic">
+                Aura mapping complies with decentralized privacy layers.
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full flex flex-col items-center py-4 relative">
+    <div className="w-full flex flex-col items-center py-4 relative min-h-[600px] overflow-hidden select-none">
+      {/* Background Profile Take-over (Blurred edge-to-edge profile avatar as requested) */}
+      <div className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none z-0">
+        <img
+          src={currentUser.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200"}
+          className="w-full h-full object-cover filter blur-[120px] opacity-20 select-none pointer-events-none scale-110"
+          referrerPolicy="no-referrer"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#09090b]/90 via-[#070709]/95 to-[#09090b]" />
+      </div>
       {/* Main Stack Container */}
       <div className="relative w-full h-[520px] max-w-sm mx-auto flex items-center justify-center select-none overflow-visible">
         <AnimatePresence mode="popLayout">
