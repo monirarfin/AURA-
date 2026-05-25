@@ -122,6 +122,11 @@ export default function HostDashboard({ rooms, onAddRoom }: HostDashboardProps) 
   const totalBookings = chartData.reduce((acc, row) => acc + row.totalBookings, 0);
   const topRoom = chartData.reduce((max, r) => r.totalEarnings > (max?.totalEarnings || 0) ? r : max, chartData[0]);
 
+  // Current month (May 2026) occupancy calculations based on total bookings vs total capacity
+  const currentMonthBookings = chartData.reduce((acc, row) => acc + (row.MayBookings || 0), 0);
+  const totalRoomNightsCapacity = Math.max(1, rooms.length) * 31;
+  const occupancyRate = Math.min(100, (currentMonthBookings / totalRoomNightsCapacity) * 100);
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -479,12 +484,12 @@ export default function HostDashboard({ rooms, onAddRoom }: HostDashboardProps) 
       {activeHostSubTab === 'analytics' && (
         <div className="space-y-6 animate-fadeIn">
           {/* Key Metrics grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             
             <div className="bg-[#0c0c0e] border border-white/5 p-4.5 rounded-2xl flex items-center justify-between">
               <div className="space-y-1">
                 <span className="text-[10px] font-mono text-white/40 block tracking-widest uppercase">Cumulative Revenue</span>
-                <span className="text-lg font-bold font-mono text-[#c5a059] block">
+                <span className="text-base font-bold font-mono text-[#c5a059] block">
                   {totalRevenue.toLocaleString()} BDT
                 </span>
                 <span className="text-[9px] font-mono text-emerald-400 flex items-center gap-1">
@@ -500,7 +505,7 @@ export default function HostDashboard({ rooms, onAddRoom }: HostDashboardProps) 
             <div className="bg-[#0c0c0e] border border-white/5 p-4.5 rounded-2xl flex items-center justify-between">
               <div className="space-y-1">
                 <span className="text-[10px] font-mono text-white/40 block tracking-widest uppercase">Total Session Bookings</span>
-                <span className="text-lg font-bold font-mono text-white block">
+                <span className="text-base font-bold font-mono text-white block">
                   {totalBookings} Completed
                 </span>
                 <span className="text-[9px] font-mono text-white/30 block">
@@ -515,7 +520,7 @@ export default function HostDashboard({ rooms, onAddRoom }: HostDashboardProps) 
             <div className="bg-[#0c0c0e] border border-white/5 p-4.5 rounded-2xl flex items-center justify-between">
               <div className="space-y-1">
                 <span className="text-[10px] font-mono text-white/40 block tracking-widest uppercase">Prime Space Asset</span>
-                <span className="text-xs font-bold font-serif italic text-white block overflow-hidden text-ellipsis whitespace-nowrap max-w-[170px]" title={topRoom?.name}>
+                <span className="text-xs font-bold font-serif italic text-white block overflow-hidden text-ellipsis whitespace-nowrap max-w-[150px]" title={topRoom?.name}>
                   {topRoom?.name || 'None'}
                 </span>
                 <span className="text-[9px] font-mono text-[#c5a059] block">
@@ -524,6 +529,21 @@ export default function HostDashboard({ rooms, onAddRoom }: HostDashboardProps) 
               </div>
               <div className="bg-amber-500/10 p-3 rounded-xl border border-amber-500/20 text-[#c5a059]">
                 <Star className="w-5 h-5 fill-[#c5a059]/10" />
+              </div>
+            </div>
+
+            <div className="bg-[#0c0c0e] border border-white/5 p-4.5 rounded-2xl flex items-center justify-between">
+              <div className="space-y-1">
+                <span className="text-[10px] font-mono text-white/40 block tracking-widest uppercase">Occupancy Rate</span>
+                <span className="text-base font-bold font-mono text-[#DEFF9A] block">
+                  {occupancyRate.toFixed(1)}%
+                </span>
+                <span className="text-[9px] font-mono text-white/30 block">
+                  {currentMonthBookings} / {totalRoomNightsCapacity} bookings in May
+                </span>
+              </div>
+              <div className="bg-[#DEFF9A]/10 p-3 rounded-xl border border-[#DEFF9A]/20 text-[#DEFF9A]">
+                <Percent className="w-5 h-5 animate-pulse" />
               </div>
             </div>
 

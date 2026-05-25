@@ -360,6 +360,30 @@ export default function AURAApp({
   onTriggerMatch,
   onNavigateToBlindRoom
 }: AURAAppProps) {
+  // Localization / Language State (Shared & persisting with localStorage)
+  const [isBangla, setIsBangla] = React.useState<boolean>(() => {
+    return localStorage.getItem('aura_language') === 'bn';
+  });
+
+  const toggleLanguage = () => {
+    const nextVal = !isBangla;
+    setIsBangla(nextVal);
+    localStorage.setItem('aura_language', nextVal ? 'bn' : 'en');
+    window.dispatchEvent(new Event('storage'));
+  };
+
+  const t = (enStr: string, bnStr: string) => {
+    return isBangla ? bnStr : enStr;
+  };
+
+  React.useEffect(() => {
+    const handleStorageChange = () => {
+      setIsBangla(localStorage.getItem('aura_language') === 'bn');
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   // Vibe Quiz Calibration States
   const [quizRefinedScores, setQuizRefinedScores] = useState<Record<string, number>>({});
   const [quizRefinedIcebreakers, setQuizRefinedIcebreakers] = useState<Record<string, string>>({});
@@ -669,20 +693,20 @@ export default function AURAApp({
       {/* Top Controller: Customize Your Persona / Tier */}
       <div className="bg-[#0d0d0f] border border-white/10 rounded-2xl p-5 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
         <div>
-          <span className="text-xs text-white/50 font-mono block mb-1">Your MBTI Personality Type</span>
+          <span className="text-xs text-white/50 font-mono block mb-1">{t("Your MBTI Personality Type", "আপনার MBTI ব্যক্তিত্ব টাইপ")}</span>
           <select
             value={currentUser.mbti}
             onChange={(e) => onUpdateCurrentUser({ ...currentUser, mbti: e.target.value })}
             className="bg-[#141417] text-xs text-[#e0e0e0] p-2.5 rounded-lg border border-white/10 w-full focus:outline-none focus:border-[#c5a059] font-mono"
           >
             {['INTJ', 'ENFP', 'INFJ', 'ESTP', 'INTP', 'ENTJ', 'ESFJ', 'ISTJ', 'ISFP', 'ENFJ'].map(m => (
-              <option key={m} value={m}>{m} Personality</option>
+              <option key={m} value={m}>{m} {t("Personality", "ব্যক্তিত্ব")}</option>
             ))}
           </select>
         </div>
 
         <div>
-          <span className="text-xs text-white/50 font-mono block mb-1">Active Socio-Economic Tier Plan</span>
+          <span className="text-xs text-white/50 font-mono block mb-1">{t("Active Socio-Economic Tier Plan", "সক্রিয় মেম্বারশিপ প্ল্যান")}</span>
           <div className="flex gap-1.5">
             <span className={`px-2.5 py-1.5 rounded-lg text-xs font-bold font-mono border ${
               currentUser.tier === 'Elite' ? 'bg-[#c5a059]/20 text-[#c5a059] border-[#c5a059]/30' :
@@ -690,22 +714,22 @@ export default function AURAApp({
               currentUser.tier === 'Basic' ? 'bg-white/5 text-white/60 border-white/5' :
               'bg-[#1a1a1c]/40 text-white/40 border-white/5'
             }`}>
-              {currentUser.tier} Tier
+              {t(`${currentUser.tier} Tier`, `${currentUser.tier} প্ল্যান`)}
             </span>
             <button
               onClick={() => {
-                setBlockedMessageFeedback("Explore the structured socio-economic capabilities of AURA Dating app:");
+                setBlockedMessageFeedback(t("Explore the structured socio-economic capabilities of AURA Dating app:", "আউরা ডেটিং অ্যাপের এক্সক্লুসিভ মেম্বারশিপ সুবিধাসমূহ:"));
                 setShowUpgradeModal(true);
               }}
               className="bg-[#1a1a1c] hover:bg-[#232327] text-[#c5a059] text-[11px] font-mono px-3.5 rounded-lg border border-[#c5a059]/30 transition-colors"
             >
-              Configure Tier
+              {t("Configure Tier", "মেম্বারশিপ পরিবর্তন")}
             </button>
           </div>
         </div>
 
         <div className="text-xs text-[#848fa5] font-mono md:text-right">
-          <p>Logged in: <span className="text-white font-serif italic text-sm">{currentUser.name}</span></p>
+          <p>{t("Logged in", "ইউজার")}: <span className="text-white font-serif italic text-sm">{currentUser.name}</span></p>
           <p className="text-[10px] text-[#c5a059]">ID: AURA-{currentUser.mbti}-GULSHAN</p>
         </div>
       </div>
@@ -718,7 +742,7 @@ export default function AURAApp({
             activeTab === 'swipe' ? 'bg-[#c5a059] text-black font-bold' : 'text-white/60 hover:text-white'
           }`}
         >
-          Browse & Swipe
+          {t("Browse & Swipe", "সদস্যদের খুঁজুন")}
         </button>
         <button
           onClick={() => setActiveTab('chats')}
@@ -726,7 +750,7 @@ export default function AURAApp({
             activeTab === 'chats' ? 'bg-[#c5a059] text-black font-bold' : 'text-white/60 hover:text-white'
           }`}
         >
-          Active Chats ({conversations.length})
+          {t(`Active Chats (${conversations.length})`, `চ্যাট মেসেজ (${conversations.length})`)}
           {conversations.some(c => c.unreadCount > 0) && (
             <span className="absolute top-2 right-4 w-2 h-2 rounded-full bg-[#c5a059]" />
           )}
@@ -737,7 +761,7 @@ export default function AURAApp({
             activeTab === 'ai-match' ? 'bg-[#c5a059] text-black font-bold' : 'text-[#848fa5] hover:text-white'
           }`}
         >
-          AURA AI MBTI Analyzer 🔮
+          {t("AURA AI MBTI Analyzer 🔮", "আউরা এআই ব্যক্তিত্ব রিডার 🔮")}
         </button>
       </div>
 
